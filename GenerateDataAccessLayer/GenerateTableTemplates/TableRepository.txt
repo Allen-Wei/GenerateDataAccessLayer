@@ -1,0 +1,4 @@
+﻿
+	public interface I[TableName]Repository : IGenericRepository<[TableName]> { }
+
+	public class [TableName]Repository : GenericRepository<[TableName]>, I[TableName]Repository { }

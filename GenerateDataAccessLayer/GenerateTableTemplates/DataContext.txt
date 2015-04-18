@@ -1,0 +1,31 @@
+﻿
+    public class [ModelContextName] : DataContext
+    {
+        public [ModelContextName]()
+            : base([ModelConstructorConnection])
+        {
+        }
+
+        public [ModelContextName](string fileOrServerOrConnection)
+            : base(fileOrServerOrConnection)
+        {
+        }
+
+        public [ModelContextName](string fileOrServerOrConnection, MappingSource mapping)
+            : base(fileOrServerOrConnection, mapping)
+        {
+        }
+
+        public [ModelContextName](IDbConnection connection)
+            : base(connection)
+        {
+        }
+
+        public [ModelContextName](IDbConnection connection, MappingSource mapping)
+            : base(connection, mapping)
+        {
+        }
+
+		//[Placeholder]
+    }
+
