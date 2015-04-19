@@ -267,8 +267,8 @@ namespace GenerateDataAccessLayer
             {
                 this.ModelFolderName = "Models";
                 this.ModelNamespace = "Models";
-                this.RepositoryFolderName = "Repository";
-                this.RepositoryNamespace = "Repository";
+                this.RepositoryFolderName = "Repositories";
+                this.RepositoryNamespace = "Repositories";
 
                 this.SaveIntoMultiFile = false;
                 this.HoverColumn = c =>
