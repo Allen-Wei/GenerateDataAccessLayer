@@ -146,11 +146,14 @@
         {
             return this.GetTable().Where(filter).LongCount();
         }
+
+		/*
         public T Add(T entity)
         {
             this.GetTable().InsertOnSubmit(entity);
             return entity;
         }
+		*/
 
         public bool Delete(T entity)
         {
