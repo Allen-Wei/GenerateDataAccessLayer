@@ -14,9 +14,11 @@ namespace GenerateDataAccessLayer
 
             GenerateTable generate = new GenerateTable(new GenerateTable.Configuration()
             {
-                TemplateFolderPath = @"D:\Projects\ConsoleApp\ConsoleApp\GenerateTableTemplates",
+                TemplateFolderPath = @"D:\Projects\GenerateDataAccessLayer\GenerateDataAccessLayer\GenerateTableTemplates",
                 BaseFilePath = @"D:\Temporary",
-                BaseNamespace = "Ysd.DataAccessLayer",
+                BaseNamespace = "Ysd",
+                ModelNamespace = "DataAccessLayer.Models",
+                RepositoryNamespace = "BusinessLogicLayer",
                 Connection = connenction,
                 ModelContextName = "ModelContext",
                 ModelConstructorConnection = "\"Data Source=(localdb)\\\\ProjectsV12;Initial Catalog=YSD;Integrated Security=True;Connect Timeout=30;Encrypt=False;TrustServerCertificate=False\"",

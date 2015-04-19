@@ -124,7 +124,7 @@ namespace GenerateDataAccessLayer
         {
             foreach (var row in this.Entities)
             {
-                System.IO.File.WriteAllText(System.IO.Path.Combine(filePath, String.Format("{0}.cs", row.Key)), row.Value);
+                System.IO.File.WriteAllText(System.IO.Path.Combine(filePath, String.Format("{0}.cs", row.Key)), row.Value, Encoding.UTF8);
             }
         }
 
@@ -164,7 +164,7 @@ namespace GenerateDataAccessLayer
             }
 
             var code = GenerateTable.Configuration.FillPlaceholder(frame, new Dictionary<string, string>() { { "Placeholder", modelsCode.ToString() } });
-            System.IO.File.WriteAllText(System.IO.Path.Combine(this.Config.BaseFilePath, this.Config.ModelFolderName, this.Config.ModelContextName + ".cs"), code);
+            System.IO.File.WriteAllText(System.IO.Path.Combine(this.Config.BaseFilePath, this.Config.ModelFolderName, this.Config.ModelContextName + ".cs"), code, Encoding.UTF8);
         }
 
         public void SaveRespository()
@@ -174,7 +174,7 @@ namespace GenerateDataAccessLayer
 
             var code = GenerateTable.Configuration.FillPlaceholder(frame, new Dictionary<string, string>() { { "Placeholder", repository } });
 
-            System.IO.File.WriteAllText(System.IO.Path.Combine(this.Config.BaseFilePath, this.Config.RepositoryFolderName, "Repository.cs"), code);
+            System.IO.File.WriteAllText(System.IO.Path.Combine(this.Config.BaseFilePath, this.Config.RepositoryFolderName, "Repository.cs"), code, Encoding.UTF8);
         }
 
         public void SaveEntityModels()
@@ -185,7 +185,7 @@ namespace GenerateDataAccessLayer
             {
                 var tableCode = GenerateTable.Configuration.GetTemplate(new { RepositoryName = "GenericRepository", t.TableName }, System.IO.Path.Combine(this.Config.TemplateFolderPath, "ModelEntity.txt"));
                 var code = GenerateTable.Configuration.FillPlaceholder(frame, new Dictionary<string, string>() { { "Placeholder", tableCode.ToString() } });
-                System.IO.File.WriteAllText(System.IO.Path.Combine(this.Config.BaseFilePath, this.Config.ModelFolderName, t.TableName + ".cs"), code);
+                System.IO.File.WriteAllText(System.IO.Path.Combine(this.Config.BaseFilePath, this.Config.ModelFolderName, t.TableName + ".cs"), code, encoding:Encoding.UTF8);
             });
 
         }
@@ -199,7 +199,7 @@ namespace GenerateDataAccessLayer
             {
                 var tableCode = GenerateTable.Configuration.GetTemplate(t, System.IO.Path.Combine(this.Config.TemplateFolderPath, "TableRepository.txt"));
                 var code = GenerateTable.Configuration.FillPlaceholder(frame, new Dictionary<string, string>() { { "Placeholder", tableCode.ToString() } });
-                System.IO.File.WriteAllText(System.IO.Path.Combine(this.Config.BaseFilePath, this.Config.RepositoryFolderName, t.TableName + ".cs"), code);
+                System.IO.File.WriteAllText(System.IO.Path.Combine(this.Config.BaseFilePath, this.Config.RepositoryFolderName, t.TableName + ".cs"), code, encoding:Encoding.UTF8);
             });
 
         }
