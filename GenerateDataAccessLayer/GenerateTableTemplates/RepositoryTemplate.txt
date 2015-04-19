@@ -113,9 +113,12 @@
     public class GenericRepository<T> : IGenericRepository<T> where T : class
     {
         private [ModelContextName]Repository<T> context;
+		public T entity;
+
         public GenericRepository()
         {
             this.context = new [ModelContextName]Repository<T>();
+			this.entity = default(T);
         }
 
        public Table<T> GetTable()
