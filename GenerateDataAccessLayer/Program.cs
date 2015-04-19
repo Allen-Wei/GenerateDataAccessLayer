@@ -16,7 +16,7 @@ namespace GenerateDataAccessLayer
             {
                 TemplateFolderPath = @"D:\Projects\ConsoleApp\ConsoleApp\GenerateTableTemplates",
                 BaseFilePath = @"D:\Temporary",
-                BaseNamespace = "ProjectName.DataAccessLayer",
+                BaseNamespace = "Ysd.DataAccessLayer",
                 Connection = connenction,
                 ModelContextName = "ModelContext",
                 ModelConstructorConnection = "\"Data Source=(localdb)\\\\ProjectsV12;Initial Catalog=YSD;Integrated Security=True;Connect Timeout=30;Encrypt=False;TrustServerCertificate=False\"",
@@ -26,7 +26,6 @@ namespace GenerateDataAccessLayer
             generate.SaveRespository();
             generate.SaveEntityModels();
             generate.SaveRepositoryModels();
-            Console.ReadKey();
         }
     }
 }

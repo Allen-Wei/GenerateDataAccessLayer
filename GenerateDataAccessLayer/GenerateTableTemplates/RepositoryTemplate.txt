@@ -2,11 +2,13 @@
     public interface IGenericRepository<T> where T : class
     {
 
+        Table<T> GetTable();
+
         /// <summary>
         /// Find all records
         /// </summary>
         /// <returns>IQueryable</returns>
-        IQueryable<T> FindAll();    
+        IQueryable<T> FindAll();
 
         /// <summary>
         /// Get one record by condition
@@ -15,12 +17,16 @@
         /// <returns>T</returns>
         T FindOne(Expression<Func<T, bool>> condition);
 
+        T FindOne(string condition, params object[] parameters);
+
         /// <summary>
         /// Query by filter
         /// </summary>
         /// <param name="filter">Filter</param>
         /// <returns>IQueryable</returns>
         IQueryable<T> Query(Expression<Func<T, bool>> filter);
+        IQueryable<T> Query(string filter, params object[] parameters);
+
 
         /// <summary>
         /// Query by filter with page
@@ -43,6 +49,7 @@
         /// <param name="take">Take count</param>
         /// <returns>IQueryable</returns>
         IQueryable<T> QueryDescending<TKey>(Expression<Func<T, bool>> filter, Expression<Func<T, TKey>> order, int skip, int take);
+        IQueryable<T> Query<TKey>(string filter, string order, int skip, int take, params object[] parameters);
 
         /// <summary>
         /// Records count
@@ -50,8 +57,11 @@
         /// <param name="filter">Filter</param>
         /// <returns>IQueryable</returns>
         long TotalRecords(Expression<Func<T, bool>> filter);
+        long TotalRecords(string filter, params object[] parameters);
 
         bool IsExist(Expression<Func<T, bool>> condition);
+
+        int MaxId(Expression<Func<T, int>> column);
 
 
 
@@ -77,6 +87,7 @@
         /// <param name="condition"></param>
         /// <returns>Deleted or not</returns>
         bool Delete(Expression<Func<T, bool>> condition);
+        bool Delete(string condition, params object[] parameters);
 
         /// <summary>
         /// Delete records
@@ -84,6 +95,7 @@
         /// <param name="condition">Condition</param>
         /// <returns>Deleted or not</returns>
         bool DeleteMulti(Expression<Func<T, bool>> condition);
+        bool DeleteMulti(string condition, params object[] parameters);
 
         /// <summary>
         /// Update record
@@ -94,6 +106,10 @@
 
         void Save();
     }
+
+
+
+
     public class GenericRepository<T> : IGenericRepository<T> where T : class
     {
         private [ModelContextName]Repository<T> context;
@@ -102,9 +118,14 @@
             this.context = new [ModelContextName]Repository<T>();
         }
 
-        public IQueryable<T> FindAll()
+       public Table<T> GetTable()
         {
             return this.context.GetTable<T>();
+        }
+
+        public IQueryable<T> FindAll()
+        {
+            return this.GetTable();
         }
         public T FindOne(Expression<Func<T, bool>> condition)
         {
@@ -120,17 +141,17 @@
         }
         public long TotalRecords(Expression<Func<T, bool>> filter)
         {
-            return this.context.GetTable<T>().Where(filter).LongCount();
+            return this.GetTable().Where(filter).LongCount();
         }
         public T Add(T entity)
         {
-            this.context.GetTable<T>().InsertOnSubmit(entity);
+            this.GetTable().InsertOnSubmit(entity);
             return entity;
         }
 
         public bool Delete(T entity)
         {
-            this.context.GetTable<T>().DeleteOnSubmit(entity);
+            this.GetTable().DeleteOnSubmit(entity);
             return true;
         }
         public void Save()
@@ -146,7 +167,7 @@
 
         public T Insert(T entity)
         {
-            this.context.GetTable<T>().InsertOnSubmit(entity);
+            this.GetTable().InsertOnSubmit(entity);
             return entity;
         }
 
@@ -154,34 +175,89 @@
         {
             var entity = this.FindOne(condition);
             if (entity == null) return false;
-            this.context.GetTable<T>().DeleteOnSubmit(entity);
+            this.GetTable().DeleteOnSubmit(entity);
             return true;
         }
 
         public bool DeleteMulti(Expression<Func<T, bool>> condition)
         {
             var entities = this.Query(condition);
-            this.context.GetTable<T>().DeleteAllOnSubmit(entities);
+            this.GetTable().DeleteAllOnSubmit(entities);
             return true;
         }
 
         public bool Update(T entity)
         {
+            //Bug 借助ValueInject赋值实现
             throw new NotImplementedException();
         }
 
 
         public bool IsExist(Expression<Func<T, bool>> condition)
         {
-            return this.context.GetTable<T>().Any(condition);
+            return this.GetTable().Any(condition);
         }
 
 
         public IEnumerable<T> InsertMulti(IEnumerable<T> entities)
         {
-            this.context.GetTable<T>().InsertAllOnSubmit(entities);
+            this.GetTable().InsertAllOnSubmit(entities);
             return entities;
         }
+
+
+        public T FindOne(string condition, params object[] parameters)
+        {
+            return this.Query(condition, parameters).FirstOrDefault();
+        }
+
+        public IQueryable<T> Query(string filter, params object[] parameters)
+        {
+            return this.GetTable().Where(filter, parameters);
+        }
+
+
+
+
+
+
+
+
+        public IQueryable<T> Query<TKey>(string filter, string order, int skip, int take, params object[] parameters)
+        {
+            return this.GetTable().Where(filter, parameters).OrderBy(order).Skip(skip).Take(take);
+        }
+
+        public long TotalRecords(string filter, params object[] parameters)
+        {
+            return this.GetTable().Where(filter, parameters).LongCount();
+        }
+
+
+        public int MaxId(Expression<Func<T, int>> column)
+        {
+            return this.GetTable().Max(column);
+        }
+
+
+        public bool Delete(string condition, params object[] parameters)
+        {
+            var entity = this.FindOne(condition, parameters);
+            if (entity == null) return false;
+            this.GetTable().DeleteOnSubmit(entity);
+            return true;
+        }
+
+        public bool DeleteMulti(string condition, params object[] parameters)
+        {
+
+            var entities = this.Query(condition, parameters);
+            this.GetTable().DeleteAllOnSubmit(entities);
+            return true;
+        }
+
+
+
     }
 
     public class [ModelContextName]Repository<T> : [BaseNamespace].[ModelNamespace].[ModelContextName] where T : class {}

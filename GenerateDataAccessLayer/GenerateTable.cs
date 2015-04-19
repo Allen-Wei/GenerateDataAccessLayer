@@ -271,7 +271,26 @@ namespace GenerateDataAccessLayer
                 this.RepositoryNamespace = "Repository";
 
                 this.SaveIntoMultiFile = false;
-                this.HoverColumn = c => String.Format("[Column(Name=\"{0}\", IsPrimaryKey={1}, IsDbGenerated={2})]", c.Name, c.IsPrimaryKey.ToString().ToLower(), c.IsDbGenerated.ToString().ToLower());
+                this.HoverColumn = c =>
+                {
+                    var columnAnnotation = new StringBuilder();
+                    columnAnnotation.AppendFormat("[Column(Name=\"{0}\"", c.Name);
+                    if (c.IsPrimaryKey)
+                    {
+                        columnAnnotation.Append(", IsPrimaryKey=true");
+                    }
+                    if (c.IsDbGenerated)
+                    {
+                        columnAnnotation.Append(", IsDbGenerated=true");
+                    }
+                    if (c.DbType.ToLower() == "ntext")
+                    {
+                        //fix ntext compare bug
+                        columnAnnotation.Append(", UpdateCheck=UpdateCheck.Never");
+                    }
+                    columnAnnotation.Append(")]");
+                    return columnAnnotation.ToString();
+                };
                 this.HoverClass = t => "";
                 this.ConvertType = c => c.DataType;
             }
