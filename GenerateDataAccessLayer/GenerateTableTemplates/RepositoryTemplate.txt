@@ -1,5 +1,4 @@
-﻿
-    public interface IGenericRepository<T> where T : class
+﻿    public interface IGenericRepository<T> where T : class
     {
 
         Table<T> GetTable();
@@ -27,6 +26,7 @@
         IQueryable<T> Query(Expression<Func<T, bool>> filter);
         IQueryable<T> Query(string filter, params object[] parameters);
 
+        IQueryable<T> Query<TKey>(Expression<Func<T, bool>> filter, Expression<Func<T, TKey>> order);
 
         /// <summary>
         /// Query by filter with page
@@ -49,7 +49,10 @@
         /// <param name="take">Take count</param>
         /// <returns>IQueryable</returns>
         IQueryable<T> QueryDescending<TKey>(Expression<Func<T, bool>> filter, Expression<Func<T, TKey>> order, int skip, int take);
+        IQueryable<T> QueryDescending<TKey>(Expression<Func<T, bool>> filter, Expression<Func<T, TKey>> order);
+
         IQueryable<T> Query<TKey>(string filter, string order, int skip, int take, params object[] parameters);
+        IQueryable<T> Query<TKey>(string filter, string order, params object[] parameters);
 
         /// <summary>
         /// Records count
@@ -104,6 +107,8 @@
         /// <returns>Updated or not</returns>
         bool Update(T entity);
 
+        void Update(T from, T to);
+
         void Save();
     }
 
@@ -112,69 +117,44 @@
 
     public class GenericRepository<T> : IGenericRepository<T> where T : class
     {
-        private [ModelContextName]Repository<T> context;
-		public T entity;
+        private ModelContextRepository<T> Context { get; set; }
+        private T Entity { get; set; }
 
         public GenericRepository()
         {
-            this.context = new [ModelContextName]Repository<T>();
-			this.entity = default(T);
+            this.Context = new ModelContextRepository<T>();
+            this.Entity = default(T);
         }
 
-       public Table<T> GetTable()
+        public Table<T> GetTable()
         {
-            return this.context.GetTable<T>();
+            return this.Context.GetTable<T>();
         }
+        public void Save()
+        {
+            this.Context.SubmitChanges();
+        }
+
 
         public IQueryable<T> FindAll()
         {
             return this.GetTable();
         }
+        public T FindOne(string condition, params object[] parameters)
+        {
+            return this.Query(condition, parameters).FirstOrDefault();
+        }
+
         public T FindOne(Expression<Func<T, bool>> condition)
         {
             return this.FindAll().FirstOrDefault(condition);
         }
-        public IQueryable<T> Query(Expression<Func<T, bool>> filter)
-        {
-            return this.FindAll().Where(filter);
-        }
-        public IQueryable<T> Query<TKey>(Expression<Func<T, bool>> filter, Expression<Func<T, TKey>> order, int skip, int take)
-        {
-            return this.Query(filter).OrderBy(order).Skip(skip).Take(take);
-        }
-        public long TotalRecords(Expression<Func<T, bool>> filter)
-        {
-            return this.GetTable().Where(filter).LongCount();
-        }
 
-		/*
-        public T Add(T entity)
-        {
-            this.GetTable().InsertOnSubmit(entity);
-            return entity;
-        }
-		*/
-
+        #region Delete
         public bool Delete(T entity)
         {
             this.GetTable().DeleteOnSubmit(entity);
             return true;
-        }
-        public void Save()
-        {
-            this.context.SubmitChanges();
-        }
-
-
-        public IQueryable<T> QueryDescending<TKey>(Expression<Func<T, bool>> filter, Expression<Func<T, TKey>> order, int skip, int take)
-        {
-            return this.Query(filter).OrderByDescending(order).Skip(skip).Take(take);
-        }
-
-        public T Insert(T entity)
-        {
-            this.GetTable().InsertOnSubmit(entity);
-            return entity;
         }
 
         public bool Delete(Expression<Func<T, bool>> condition)
@@ -191,61 +171,6 @@
             this.GetTable().DeleteAllOnSubmit(entities);
             return true;
         }
-
-        public bool Update(T entity)
-        {
-            //Bug 借助ValueInject赋值实现
-            throw new NotImplementedException();
-        }
-
-
-        public bool IsExist(Expression<Func<T, bool>> condition)
-        {
-            return this.GetTable().Any(condition);
-        }
-
-
-        public IEnumerable<T> InsertMulti(IEnumerable<T> entities)
-        {
-            this.GetTable().InsertAllOnSubmit(entities);
-            return entities;
-        }
-
-
-        public T FindOne(string condition, params object[] parameters)
-        {
-            return this.Query(condition, parameters).FirstOrDefault();
-        }
-
-        public IQueryable<T> Query(string filter, params object[] parameters)
-        {
-            return this.GetTable().Where(filter, parameters);
-        }
-
-
-
-
-
-
-
-
-        public IQueryable<T> Query<TKey>(string filter, string order, int skip, int take, params object[] parameters)
-        {
-            return this.GetTable().Where(filter, parameters).OrderBy(order).Skip(skip).Take(take);
-        }
-
-        public long TotalRecords(string filter, params object[] parameters)
-        {
-            return this.GetTable().Where(filter, parameters).LongCount();
-        }
-
-
-        public int MaxId(Expression<Func<T, int>> column)
-        {
-            return this.GetTable().Max(column);
-        }
-
-
         public bool Delete(string condition, params object[] parameters)
         {
             var entity = this.FindOne(condition, parameters);
@@ -261,6 +186,103 @@
             this.GetTable().DeleteAllOnSubmit(entities);
             return true;
         }
+        #endregion
+
+        public T Insert(T entity)
+        {
+            this.GetTable().InsertOnSubmit(entity);
+            return entity;
+        }
+
+        public IEnumerable<T> InsertMulti(IEnumerable<T> entities)
+        {
+            this.GetTable().InsertAllOnSubmit(entities);
+            return entities;
+        }
+
+        public bool Update(T entity)
+        {
+            //Bug 借助ValueInject赋值实现
+            throw new NotImplementedException();
+        }
+
+        public void Update(T from, T to)
+        {
+            throw new NotImplementedException();
+        }
+
+
+
+
+
+        #region Query
+        public IQueryable<T> Query(Expression<Func<T, bool>> filter)
+        {
+            return this.FindAll().Where(filter);
+        }
+        public IQueryable<T> Query(string filter, params object[] parameters)
+        {
+            return this.GetTable().Where(filter, parameters);
+        }
+
+
+        public IQueryable<T> Query<TKey>(Expression<Func<T, bool>> filter, Expression<Func<T, TKey>> order)
+        {
+            return this.Query(filter).OrderBy(order);
+        }
+
+        public IQueryable<T> QueryDescending<TKey>(Expression<Func<T, bool>> filter, Expression<Func<T, TKey>> order)
+        {
+            return this.Query(filter).OrderByDescending(order);
+        }
+
+        public IQueryable<T> Query<TKey>(string filter, string order, params object[] parameters)
+        {
+            return this.Query(filter, parameters).OrderBy(order);
+
+        }
+
+        public IQueryable<T> Query<TKey>(Expression<Func<T, bool>> filter, Expression<Func<T, TKey>> order, int skip, int take)
+        {
+            return this.Query(filter).OrderBy(order).Skip(skip).Take(take);
+        }
+        public IQueryable<T> QueryDescending<TKey>(Expression<Func<T, bool>> filter, Expression<Func<T, TKey>> order, int skip, int take)
+        {
+            return this.Query(filter).OrderByDescending(order).Skip(skip).Take(take);
+        }
+        public IQueryable<T> Query<TKey>(string filter, string order, int skip, int take, params object[] parameters)
+        {
+            return this.GetTable().Where(filter, parameters).OrderBy(order).Skip(skip).Take(take);
+        }
+
+        #endregion
+
+
+        #region Utils
+        public bool IsExist(Expression<Func<T, bool>> condition)
+        {
+            return this.GetTable().Any(condition);
+        }
+
+        public long TotalRecords(Expression<Func<T, bool>> filter)
+        {
+            return this.GetTable().Where(filter).LongCount();
+        }
+
+        public long TotalRecords(string filter, params object[] parameters)
+        {
+            return this.GetTable().Where(filter, parameters).LongCount();
+        }
+
+
+        public int MaxId(Expression<Func<T, int>> column)
+        {
+            return this.GetTable().Max(column);
+        }
+
+        #endregion
+
+
 
 
 
