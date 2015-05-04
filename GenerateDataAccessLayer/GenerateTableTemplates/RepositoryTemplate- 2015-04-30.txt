@@ -24,7 +24,8 @@
         /// <param name="filter">Filter</param>
         /// <returns>IQueryable</returns>
         IQueryable<T> Query(Expression<Func<T, bool>> filter);
-        IQueryable<T> Query(string filter, object[] parameters = null);
+        IQueryable<T> Query(string filter, params object[] parameters);
+
         IQueryable<T> Query<TKey>(Expression<Func<T, bool>> filter, Expression<Func<T, TKey>> order);
 
         /// <summary>
@@ -50,8 +51,8 @@
         IQueryable<T> QueryDescending<TKey>(Expression<Func<T, bool>> filter, Expression<Func<T, TKey>> order, int skip, int take);
         IQueryable<T> QueryDescending<TKey>(Expression<Func<T, bool>> filter, Expression<Func<T, TKey>> order);
 
-        IQueryable<T> Query(string filter, string order, int skip, int take, object[] parameters = null);
-        IQueryable<T> Query(string filter, string order, object[] parameters = null);
+        IQueryable<T> Query<TKey>(string filter, string order, int skip, int take, params object[] parameters);
+        IQueryable<T> Query<TKey>(string filter, string order, params object[] parameters);
 
         /// <summary>
         /// Records count
@@ -98,18 +99,14 @@
         /// <returns>Deleted or not</returns>
         bool DeleteMulti(Expression<Func<T, bool>> condition);
         bool DeleteMulti(string condition, params object[] parameters);
-        bool DeleteMulti(IEnumerable<T> entities);
 
         /// <summary>
-        /// Update record and submit
+        /// Update record
         /// </summary>
         /// <param name="entity">Entity</param>
         /// <returns>Updated or not</returns>
         bool Update(T entity);
 
-        /// <summary>
-        /// reset value
-        /// </summary>
         void Update(T from, T to);
 
         void Save();
@@ -174,13 +171,6 @@
             this.GetTable().DeleteAllOnSubmit(entities);
             return true;
         }
-
-        public bool DeleteMulti(IEnumerable<T> entities)
-        {
-            this.GetTable().DeleteAllOnSubmit(entities);
-            return true;
-        }
-
         public bool Delete(string condition, params object[] parameters)
         {
             var entity = this.FindOne(condition, parameters);
@@ -212,12 +202,12 @@
 
         public bool Update(T entity)
         {
+            //Bug 借助ValueInject赋值实现
             throw new NotImplementedException();
         }
 
         public void Update(T from, T to)
         {
-            //Bug 借助ValueInject赋值实现
             throw new NotImplementedException();
         }
 
@@ -230,7 +220,7 @@
         {
             return this.FindAll().Where(filter);
         }
-        public IQueryable<T> Query(string filter, object[] parameters)
+        public IQueryable<T> Query(string filter, params object[] parameters)
         {
             return this.GetTable().Where(filter, parameters);
         }
@@ -246,7 +236,7 @@
             return this.Query(filter).OrderByDescending(order);
         }
 
-        public IQueryable<T> Query(string filter, string order, object[] parameters =null)
+        public IQueryable<T> Query<TKey>(string filter, string order, params object[] parameters)
         {
             return this.Query(filter, parameters).OrderBy(order);
 
@@ -260,9 +250,9 @@
         {
             return this.Query(filter).OrderByDescending(order).Skip(skip).Take(take);
         }
-        public IQueryable<T> Query(string filter, string order, int skip, int take, object[] parameters = null)
+        public IQueryable<T> Query<TKey>(string filter, string order, int skip, int take, params object[] parameters)
         {
-            return this.Query(filter, order, parameters).Skip(skip).Take(take).OrderBy(order);
+            return this.GetTable().Where(filter, parameters).OrderBy(order).Skip(skip).Take(take);
         }
 
         #endregion
@@ -297,6 +287,5 @@
 
 
     }
-
 
     public class [ModelContextName]Repository<T> : [BaseNamespace].[ModelNamespace].[ModelContextName] where T : class {}

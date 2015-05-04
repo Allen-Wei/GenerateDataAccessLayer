@@ -10,16 +10,18 @@ namespace GenerateDataAccessLayer
     {
         static void Main(string[] args)
         {
-            var connenction = "Data Source=(localdb)\\ProjectsV12;Initial Catalog=YSD;Integrated Security=True;Connect Timeout=30;Encrypt=False;TrustServerCertificate=False";
+            var connenction = "server=192.168.11.88; uid=sa; pwd=huao@123; database=Ysd_Credit";
 
             GenerateTable generate = new GenerateTable(new GenerateTable.Configuration()
             {
                 TemplateFolderPath = @"D:\Projects\GenerateDataAccessLayer\GenerateDataAccessLayer\GenerateTableTemplates",
-                BaseFilePath = @"D:\Temporary",
-                BaseNamespace = "Ysd.DataAccessLayer",
+                BaseFilePath = @"E:\Temporary\Generate",
+                BaseNamespace = "Ysd",
+                ModelNamespace = "DataAccessLayer",
+                RepositoryNamespace = "BusinessLogicLayer",
                 Connection = connenction,
                 ModelContextName = "ModelContext",
-                ModelConstructorConnection = "\"Data Source=(localdb)\\\\ProjectsV12;Initial Catalog=YSD;Integrated Security=True;Connect Timeout=30;Encrypt=False;TrustServerCertificate=False\"",
+                ModelConstructorConnection = "server=192.168.11.88; uid=sa; pwd=huao@123; database=Ysd_Credit"
             });
             generate.SetEntities();
             generate.SaveModels();
