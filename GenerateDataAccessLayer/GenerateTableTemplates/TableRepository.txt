@@ -1,4 +1,8 @@
 ﻿
 	public interface I[TableName]Repository : IGenericRepository<[TableName]> { }
 
-	public class [TableName]Repository : GenericRepository<[TableName]>, I[TableName]Repository { }
+	public class [TableName]Repository : GenericRepository<[TableName]>, I[TableName]Repository 
+	{ 
+	    public [TableName]Repository():base(){}
+        public [TableName]Repository(ModelContext context) : base(context) { }
+	}

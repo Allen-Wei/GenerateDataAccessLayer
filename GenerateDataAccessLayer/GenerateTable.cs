@@ -58,7 +58,7 @@ namespace GenerateDataAccessLayer
                     dbType = column.IsNullable ? "DateTime?" : "DateTime"; break;
                 case "smallint":
                 case "tinyint":
-                    dbType = column.IsNullable ? "byte?" : "byte"; break;
+                    dbType = column.IsNullable ? "short?" : "short"; break;
                 case "uniqueidentifier":
                     dbType = column.IsNullable ? "Guid?" : "Guid"; break;
                 case "bit":
@@ -80,18 +80,19 @@ namespace GenerateDataAccessLayer
         {
             var cxt = new Context(this.Config.Connection);
             var tables = cxt.ExecuteQuery<UserTable>("select Table_Name as TableName from INFORMATION_SCHEMA.TABLES").ToList();
+
             tables.ForEach(t =>
             {
                 t.SetPrimaryKeyNames(cxt);
                 t.SetIdentityColumnNames(cxt);
                 t.Columns = cxt.ExecuteQuery<TableColumn>(
-                  String.Format("select COLUMN_NAME as Name, DATA_TYPE as DbType, cast(case when IS_NULLABLE = 'YES' then 1 else 0 end as bit) as IsNullable from INFORMATION_SCHEMA.COLUMNS where Table_Name='{0}'", t.TableName)).ToList();
+                  String.Format("select COLUMN_NAME as Name, DATA_TYPE as DbType, cast(case when IS_NULLABLE = 'YES' then 1 else 0 end as bit) as IsNullable, CHARACTER_MAXIMUM_LENGTH as [Length] from INFORMATION_SCHEMA.COLUMNS where Table_Name='{0}'", t.TableName)).ToList();
+
                 t.Columns.ForEach(c =>
                 {
                     c.DataType = this.ConvertType(c);
                     c.IsPrimaryKey = t.PrimaryKeyNames.Contains(c.Name);
                     c.IsDbGenerated = t.IdentityColumnNames.Contains(c.Name);
-
                 });
             });
 
@@ -128,6 +129,9 @@ namespace GenerateDataAccessLayer
             }
         }
 
+        /// <summary>
+        /// 初始化实体类
+        /// </summary>
         public void SetEntities()
         {
             this.GetTables();
@@ -185,7 +189,7 @@ namespace GenerateDataAccessLayer
             {
                 var tableCode = GenerateTable.Configuration.GetTemplate(new { RepositoryName = "GenericRepository", t.TableName }, System.IO.Path.Combine(this.Config.TemplateFolderPath, "ModelEntity.txt"));
                 var code = GenerateTable.Configuration.FillPlaceholder(frame, new Dictionary<string, string>() { { "Placeholder", tableCode.ToString() } });
-                System.IO.File.WriteAllText(System.IO.Path.Combine(this.Config.BaseFilePath, this.Config.ModelFolderName, t.TableName + ".cs"), code, encoding:Encoding.UTF8);
+                System.IO.File.WriteAllText(System.IO.Path.Combine(this.Config.BaseFilePath, this.Config.ModelFolderName, t.TableName + ".cs"), code, encoding: Encoding.UTF8);
             });
 
         }
@@ -199,13 +203,23 @@ namespace GenerateDataAccessLayer
             {
                 var tableCode = GenerateTable.Configuration.GetTemplate(t, System.IO.Path.Combine(this.Config.TemplateFolderPath, "TableRepository.txt"));
                 var code = GenerateTable.Configuration.FillPlaceholder(frame, new Dictionary<string, string>() { { "Placeholder", tableCode.ToString() } });
-                System.IO.File.WriteAllText(System.IO.Path.Combine(this.Config.BaseFilePath, this.Config.RepositoryFolderName, t.TableName + ".cs"), code, encoding:Encoding.UTF8);
+                System.IO.File.WriteAllText(System.IO.Path.Combine(this.Config.BaseFilePath, this.Config.RepositoryFolderName, t.TableName + ".cs"), code, encoding: Encoding.UTF8);
             });
 
         }
         public class UserTable
         {
-            public string TableName { get; set; }
+            private string _tableName;
+
+            public string TableName
+            {
+                get { return this._tableName.UpperFirstLetter(); }
+                set
+                {
+                    this._tableName = value;
+                }
+            }
+
             public List<TableColumn> Columns { get; set; }
             public List<string> PrimaryKeyNames { get; set; }
             public List<string> IdentityColumnNames { get; set; }
@@ -233,6 +247,7 @@ namespace GenerateDataAccessLayer
             public string DbType { get; set; }
             public bool IsPrimaryKey { get; set; }
             public bool IsDbGenerated { get; set; }
+            public int? Length { get; set; }
         }
 
         public class Configuration
@@ -274,7 +289,10 @@ namespace GenerateDataAccessLayer
                 this.HoverColumn = c =>
                 {
                     var columnAnnotation = new StringBuilder();
-                    columnAnnotation.AppendFormat("[Column(Name=\"{0}\"", c.Name);
+
+                    //columnAnnotation.AppendLine(String.Format("private "));
+
+                    columnAnnotation.AppendFormat("[System.Data.Linq.Mapping.ColumnAttribute(Name=\"{0}\"", c.Name);
                     if (c.IsPrimaryKey)
                     {
                         columnAnnotation.Append(", IsPrimaryKey=true");
@@ -283,11 +301,22 @@ namespace GenerateDataAccessLayer
                     {
                         columnAnnotation.Append(", IsDbGenerated=true");
                     }
-                    if (c.DbType.ToLower() == "ntext")
+                    if (
+                        c.DbType.ToLower() == "ntext" || //ntext
+                        (c.DbType.ToLower() == "varchar" && c.Length == -1)  //varchar(max)
+                        )
                     {
-                        //fix ntext compare bug
                         columnAnnotation.Append(", UpdateCheck=UpdateCheck.Never");
                     }
+                    var dbType = String.Format(" ,DbType=\"{0}", c.DbType.UpperFirstLetter());
+
+                    if (c.Length > 0 && (c.DbType.ToLower() == "varchar" || c.DbType.ToLower() == "nvarchar"))
+                    {
+                        dbType += String.Format("({0})", c.Length);
+                    }
+                    dbType += "\"";
+                    columnAnnotation.Append(dbType);
+
                     columnAnnotation.Append(")]");
                     return columnAnnotation.ToString();
                 };
@@ -356,6 +385,31 @@ namespace GenerateDataAccessLayer
             }
         }
 
-    }
 
+
+    }
+    public static class Extension
+    {
+        public static string UpperFirstLetter(this string str)
+        {
+            if (String.IsNullOrWhiteSpace(str))
+            {
+                return str;
+            }
+
+            var newStr = new StringBuilder();
+            for (var i = 0; i < str.Length; i++)
+            {
+                if (i == 0)
+                {
+                    newStr.Append(str[i].ToString().ToUpper());
+                }
+                else
+                {
+                    newStr.Append(str[i]);
+                }
+            }
+            return newStr.ToString();
+        }
+    }
 }
